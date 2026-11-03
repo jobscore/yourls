@@ -36,7 +36,8 @@ module Yourls
       if [200, 409].include? response.code
         response
       # Starting from yourls 1.8, it returns 400 when a url already exists and YOURLS_UNIQUE_URLS is defined
-      elsif response.code == 400 && response.message =~ /already exists in database/
+      # response['message'] takes the message from the body
+      elsif response.code == 400 && response['message'] =~ /already exists in database/
         response
       else
         raise YourlsError.new(response.message, response.code)
