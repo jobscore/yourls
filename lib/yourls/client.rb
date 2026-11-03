@@ -28,13 +28,17 @@ module Yourls
       timestamp = (Time.now + @server_offset).to_i
       signature = Digest::MD5.hexdigest(timestamp.to_s + @api_key)
 
-      query ||= {}
       query.merge!(timestamp: timestamp, signature: signature, action: action, format: 'json')
 
       response = self.class.get(@base_uri, query: query)
 
-      if response.code == 200
-        return response
+      # Starting from yourls 1.9.5, it returns 409 when a url already exists and YOURLS_UNIQUE_URLS is defined
+      if [200, 409].include? response.code
+        response
+      # Starting from yourls 1.8, it returns 400 when a url already exists and YOURLS_UNIQUE_URLS is defined
+      # response['message'] takes the message from the body
+      elsif response.code == 400 && response['message'] =~ /already exists in database/
+        response
       else
         raise YourlsError.new(response.message, response.code)
       end
